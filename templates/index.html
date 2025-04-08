@@ -1,0 +1,319 @@
+<!doctype html>  
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diabetes Risk Prediction</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    /* Modal styles (unchanged) */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+      background-color: white;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 50%;
+      text-align: center;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .close {
+      color: red;
+      float: right;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .modal-content p {
+      margin-top: 10px;
+      font-size: 16px;
+      color: #333;
+    }
+    
+    /* New risk display styles */
+    .risk-meter {
+      padding: 15px;
+      border-radius: 5px;
+      margin: 10px 0;
+      text-align: center;
+      font-weight: bold;
+    }
+    
+    .risk-factors {
+      margin: 15px 0;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 5px;
+    }
+    
+    .prevention-tips {
+      margin-top: 15px;
+      text-align: left;
+    }
+    
+    .prevention-tips li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <header id="navbar">
+    {% if current_user.is_authenticated %}
+      {% if current_user.is_admin %}
+        <a href="{{ url_for('admin_dashboard') }}" class="btn-admin">Admin</a>
+      {% endif %}
+      <a href="{{ url_for('prediction_history') }}" class="btn-history">History</a>
+      <a href="{{ url_for('logout') }}" class="btn-auth" id="auth-btn">Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}" class="btn-auth" id="auth-btn">Login</a>
+    {% endif %}
+  </header>
+  
+
+  <div class="container">
+    <div class="text">
+      <h2>Diabetes Risk Assessment</h2>
+      <p>Assess your future risk of developing diabetes</p>
+    </div>
+
+    <form id="prediction-form">
+      <!-- Existing form fields (unchanged) -->
+      <div class="form-row">
+        <div class="input-data">
+          <input type="number" id="pregnancies" name="pregnancies" step="any" required />
+          <div class="underline"></div>
+          <label>Number of Pregnancies</label>
+        </div>
+        <div class="input-data">
+          <input type="number" id="glucose" name="glucose" step="any" required />
+          <div class="underline"></div>
+          <label>Glucose Level (mg/dL)</label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="input-data">
+          <input type="number" id="blood_pressure" name="blood_pressure" step="any" required />
+          <div class="underline"></div>
+          <label>Blood Pressure (mmHg)</label>
+        </div>
+        <div class="input-data">
+          <input type="number" id="skin_thickness" name="skin_thickness" step="any" required />
+          <div class="underline"></div>
+          <label>Skin Thickness (mm)</label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="input-data">
+          <input type="number" id="insulin" name="insulin" step="any" required />
+          <div class="underline"></div>
+          <label>Insulin Level (μU/mL)</label>
+        </div>
+        <div class="input-data">
+          <input type="number" id="bmi" name="bmi" step="any" required />
+          <div class="underline"></div>
+          <label>BMI (kg/m²)</label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="input-data">
+          <input type="number" id="dpf" name="dpf" step="any" required />
+          <div class="underline"></div>
+          <label>Diabetes Pedigree Function</label>
+        </div>
+        <div class="input-data">
+          <input type="number" id="age" name="age" step="any" required />
+          <div class="underline"></div>
+          <label>Age</label>
+        </div>
+      </div>
+
+      <!-- New risk factor fields -->
+      <div class="form-row">
+        <div class="input-data">
+          <select id="family_history" name="family_history" required>
+            <option value="">Select family history</option>
+            <option value="1.0">No family history</option>
+            <option value="1.5">One parent with diabetes</option>
+            <option value="2.0">Both parents with diabetes</option>
+          </select>
+          <div class="underline"></div>
+          <label>Family History</label>
+        </div>
+        <div class="input-data">
+          <select id="activity_level" name="activity_level" required>
+            <option value="">Select activity level</option>
+            <option value="1.2">Sedentary</option>
+            <option value="1.0">Light activity</option>
+            <option value="0.8">Moderate activity</option>
+            <option value="0.6">Very active</option>
+          </select>
+          <div class="underline"></div>
+          <label>Activity Level</label>
+        </div>
+      </div>
+
+      <button type="button" id="predictBtn">Assess Risk</button>
+
+      <div id="result-container" style="display:none;">
+        <div id="risk-meter" class="risk-meter"></div>
+        <div id="risk-factors" class="risk-factors"></div>
+        <div id="recommendation"></div>
+        <div id="prevention-tips" class="prevention-tips"></div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Modal Popup (unchanged) -->
+  <div id="lifestyleModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2>Diabetes Risk Detected</h2>
+      <p id="adviceText"></p>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("predictBtn").addEventListener("click", function() {
+  predict();
+});
+
+function closeModal() {
+  document.getElementById("lifestyleModal").style.display = "none";
+}
+
+function predict() { 
+  // Show loading state
+  const predictBtn = document.getElementById("predictBtn");
+  predictBtn.disabled = true;
+  predictBtn.textContent = "Processing...";
+
+  const clinicalFields = ["pregnancies", "glucose", "blood_pressure", "skin_thickness",
+                        "insulin", "bmi", "dpf", "age"];
+  const riskFactorFields = ["family_history", "activity_level"];
+
+  // Validate and collect input data
+  let inputData = {};
+  for (let field of clinicalFields) {
+    const value = parseFloat(document.getElementById(field).value);
+    if (isNaN(value)) {
+      alert("Please fill all clinical fields with valid numbers.");
+      predictBtn.disabled = false;
+      predictBtn.textContent = "Assess Risk";
+      return;
+    }
+    inputData[field] = value;
+  }
+
+  let riskFactors = {};
+  for (let field of riskFactorFields) {
+    const select = document.getElementById(field);
+    if (!select.value) {
+      alert("Please select all risk factor options.");
+      predictBtn.disabled = false;
+      predictBtn.textContent = "Assess Risk";
+      return;
+    }
+    riskFactors[field] = parseFloat(select.value);
+  }
+
+  fetch("/predict", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...inputData,
+      ...riskFactors
+    }),
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    console.log("Received data:", data); // Debugging
+    
+    // Safely handle response data
+    const riskFactors = Array.isArray(data.risk_factors) ? 
+      data.risk_factors : 
+      (data.key_risk_factors || []);
+    
+    const preventionTips = Array.isArray(data.prevention_tips) ? 
+      data.prevention_tips : 
+      [
+        "Maintain a healthy weight",
+        "Exercise regularly (150 minutes/week)",
+        "Eat a balanced diet with whole grains",
+        "Limit sugar and processed foods",
+        "Get regular health checkups"
+      ];
+
+    // Display results
+    const riskScore = data.risk_score || 0;
+    const riskCategory = data.risk_category || "Unknown";
+    const recommendation = data.recommendation || "Consult your doctor for personalized advice.";
+
+    document.getElementById("risk-meter").innerHTML = `
+      <h3>Your Diabetes Risk: ${riskScore}%</h3>
+      <p>Risk Category: ${riskCategory}</p>
+    `;
+    
+    document.getElementById("risk-meter").style.backgroundColor = 
+      riskScore > 70 ? '#ff6b6b' : 
+      riskScore > 50 ? '#ffa502' : 
+      riskScore > 30 ? '#feca57' : '#51cf66';
+
+    document.getElementById("risk-factors").innerHTML = `
+      <h4>Key Risk Factors:</h4>
+      <ul>${riskFactors.map(factor => `<li>${factor}</li>`).join('')}</ul>
+    `;
+
+    document.getElementById("recommendation").innerHTML = `
+      <h4>Recommendation:</h4>
+      <p>${recommendation}</p>
+    `;
+
+    document.getElementById("prevention-tips").innerHTML = `
+      <h4>Prevention Tips:</h4>
+      <ul>${preventionTips.map(tip => `<li>${tip}</li>`).join('')}</ul>
+    `;
+
+    document.getElementById("result-container").style.display = "block";
+
+    // Show modal for high risk
+    if (riskScore > 50) {
+      document.getElementById("adviceText").innerText = recommendation;
+      document.getElementById("lifestyleModal").style.display = "block";
+    }
+  })
+  .catch(error => {
+    console.error("Error:", error);
+    alert("An error occurred during prediction. Please try again.");
+  })
+  .finally(() => {
+    predictBtn.disabled = false;
+    predictBtn.textContent = "Assess Risk";
+  });
+}
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,101 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">All Assessments</h2>
+    
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Risk Assessments</h6>
+            <div>
+                <input type="text" id="assessmentSearch" class="form-control form-control-sm" placeholder="Search assessments...">
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="assessmentTable">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Date</th>
+                            <th>Risk Score</th>
+                            <th>Category</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assessment in assessments %}
+                        <tr>
+                            <td>{{ assessment.id }}</td>
+                            <td>{{ assessment.user.username }}</td>
+                            <td>{{ assessment.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ "%.2f"|format(assessment.risk_score) }}%</td>
+                            <td>
+                                <span class="badge 
+                                    {% if assessment.risk_category == 'Very High' %}bg-danger
+                                    {% elif assessment.risk_category == 'High' %}bg-warning text-dark
+                                    {% elif assessment.risk_category == 'Moderate' %}bg-info
+                                    {% else %}bg-success{% endif %}">
+                                    {{ assessment.risk_category }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin_view_assessment', assessment_id=assessment.id) }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAssessmentModal{{ assessment.id }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Delete Confirmation Modal -->
+                        <div class="modal fade" id="deleteAssessmentModal{{ assessment.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Confirm Deletion</h5>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        Delete assessment from {{ assessment.user.username }} ({{ assessment.created_at.strftime('%Y-%m-%d') }})?
+                                        <br>Risk Score: {{ "%.2f"|format(assessment.risk_score) }}%
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <form action="{{ url_for('admin_delete_assessment', assessment_id=assessment.id) }}" method="POST">
+                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Client-side search
+document.getElementById('assessmentSearch').addEventListener('input', function() {
+    const searchValue = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#assessmentTable tbody tr');
+    
+    rows.forEach(row => {
+        const username = row.cells[1].textContent.toLowerCase();
+        const date = row.cells[2].textContent;
+        if (username.includes(searchValue) || date.includes(searchValue)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Assessment Details</h1>
+        <a href="{{ url_for('admin_assessments') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Assessments
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Assessment Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>User:</strong> {{ assessment.user.username }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Date:</strong> {{ assessment.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Risk Score:</strong> 
+                        <span class="badge 
+                            {% if assessment.risk_category == 'Very High' %}bg-danger
+                            {% elif assessment.risk_category == 'High' %}bg-warning text-dark
+                            {% elif assessment.risk_category == 'Moderate' %}bg-info
+                            {% else %}bg-success{% endif %}">
+                            {{ "%.2f"|format(assessment.risk_score) }}% ({{ assessment.risk_category }})
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Risk Factors:</strong>
+                        <ul>
+                            {% for factor in assessment.risk_factors.split(', ') %}
+                            <li>{{ factor }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Health Parameters</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tr>
+                                <th>Pregnancies</th>
+                                <td>{{ assessment.pregnancies }}</td>
+                            </tr>
+                            <tr>
+                                <th>Glucose (mg/dL)</th>
+                                <td>{{ assessment.glucose }}</td>
+                            </tr>
+                            <tr>
+                                <th>Blood Pressure (mmHg)</th>
+                                <td>{{ assessment.blood_pressure }}</td>
+                            </tr>
+                            <tr>
+                                <th>Skin Thickness (mm)</th>
+                                <td>{{ assessment.skin_thickness }}</td>
+                            </tr>
+                            <tr>
+                                <th>Insulin (μU/mL)</th>
+                                <td>{{ assessment.insulin }}</td>
+                            </tr>
+                            <tr>
+                                <th>BMI</th>
+                                <td>{{ assessment.bmi }}</td>
+                            </tr>
+                            <tr>
+                                <th>Diabetes Pedigree</th>
+                                <td>{{ assessment.diabetes_pedigree }}</td>
+                            </tr>
+                            <tr>
+                                <th>Age</th>
+                                <td>{{ assessment.age }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Recommendations</h6>
+        </div>
+        <div class="card-body">
+            <p>{{ assessment.recommendation }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
